@@ -1,0 +1,8 @@
+nudenet==3.4.2
+numpy==2.2.5
+onnxruntime==1.21.1
+onnxruntime_gpu==1.21.1
+Pillow==11.2.1
+timm==1.0.15
+torch==2.6.0
+torchvision==0.21.0
