@@ -1,5 +1,7 @@
 # ComfyUI Rating Checker
 
+[[English]](./README.md)
+
 ComfyUI の画像を NSFW (Not Safe For Work) 分類するためのカスタムノードです。
 
 ## Feature
