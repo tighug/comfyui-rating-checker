@@ -1,4 +1,5 @@
 import json
+from typing import Dict, List, Tuple
 
 import numpy as np
 import timm
@@ -23,18 +24,33 @@ class RatingCheckerNudeNet:
             ]
         )
 
+    RETURN_TYPES = (
+        "STRING",
+        "STRING",
+    )
+    RETURN_NAMES = (
+        "nsfw_labels",
+        "detections_json",
+    )
+    FUNCTION = "detect"
+    CATEGORY = "utils"
+    OUTPUT_IS_LIST = (
+        True,
+        True,
+    )
+
     @classmethod
-    def INPUT_TYPES(cls):
+    def INPUT_TYPES(cls) -> dict:
         return {
             "required": {
                 "images": ("IMAGE",),
                 "threshold_nsfw": (
                     "FLOAT",
-                    {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.01},
+                    {"default": 0.8, "min": 0.0, "max": 1.0, "step": 0.01},
                 ),
                 "threshold_detect": (
                     "FLOAT",
-                    {"default": 0.2, "min": 0.0, "max": 1.0, "step": 0.01},
+                    {"default": 0.15, "min": 0.0, "max": 1.0, "step": 0.01},
                 ),
                 "detect_armpits": ("BOOLEAN", {"default": False}),
                 "detect_female_breast": ("BOOLEAN", {"default": True}),
@@ -48,80 +64,100 @@ class RatingCheckerNudeNet:
             }
         }
 
-    RETURN_TYPES = (
-        "STRING",
-        "STRING",
-    )
-    RETURN_NAMES = (
-        "detections_json",
-        "nsfw_labels",
-    )
-    FUNCTION = "detect"
-    CATEGORY = "utils"
-
     def detect(
         self,
-        images,
-        detect_min_score,
-        nsfw_threshold,
-        detect_armpits,
-        detect_female_breast,
-        detect_male_breast,
-        detect_female_genitalia,
-        detect_male_genitalia,
-        detect_belly,
-        detect_buttocks,
-        detect_anus,
-        detect_feet,
-    ):
+        images: torch.Tensor,
+        threshold_nsfw: float,
+        threshold_detect: float,
+        detect_armpits: bool,
+        detect_female_breast: bool,
+        detect_male_breast: bool,
+        detect_female_genitalia: bool,
+        detect_male_genitalia: bool,
+        detect_belly: bool,
+        detect_buttocks: bool,
+        detect_anus: bool,
+        detect_feet: bool,
+    ) -> Tuple[str, str]:
+        allowed_classes = self._build_allowed_classes(
+            detect_armpits,
+            detect_female_breast,
+            detect_male_breast,
+            detect_female_genitalia,
+            detect_male_genitalia,
+            detect_belly,
+            detect_buttocks,
+            detect_anus,
+            detect_feet,
+        )
+
         all_detections = []
         nsfw_labels = []
 
-        allowed_classes = []
-        if detect_armpits:  # 脇
-            allowed_classes.append("ARMPITS_EXPOSED")
-        if detect_female_breast:  # 女性の胸
-            allowed_classes.append("FEMALE_BREAST_EXPOSED")
-        if detect_male_breast:  # 男性の胸
-            allowed_classes.append("MALE_BREAST_EXPOSED")
-        if detect_female_genitalia:  # 女性器
-            allowed_classes.append("FEMALE_GENITALIA_EXPOSED")
-        if detect_male_genitalia:  # 男性器
-            allowed_classes.append("MALE_GENITALIA_EXPOSED")
-        if detect_belly:  # お腹
-            allowed_classes.append("BELLY_EXPOSED")
-        if detect_buttocks:  # お尻
-            allowed_classes.append("BUTTOCKS_EXPOSED")
-        if detect_anus:  # 肛門
-            allowed_classes.append("ANUS_EXPOSED")
-        if detect_feet:  # 足
-            allowed_classes.append("FEET_EXPOSED")
-
         for image in images:
-            np_image = (image.cpu().numpy() * 255).astype(np.uint8)
-            detections = self.detector.detect(np_image)
-            filtered = [d for d in detections if d["score"] >= detect_min_score]
-            final_detections = [
-                {"class": d["class"], "score": round(d["score"], 2)}
-                for d in filtered
-                if d["class"] in allowed_classes
-            ]
-
-            input_tensor = self.transform(np_image).unsqueeze(0)
-            with torch.no_grad():
-                outputs = self.model(input_tensor)
-                probs = torch.nn.functional.softmax(outputs, dim=-1)
-                score = probs.max().item()
-
-            all_detections.append(
-                {"nudenet_detections": final_detections, "nsfw_score": round(score, 2)}
+            nsfw_label, detection = self._process_single_image(
+                image, allowed_classes, threshold_detect, threshold_nsfw
             )
+            all_detections.append(detection)
+            nsfw_labels.append(nsfw_label)
 
-            if len(final_detections) > 0:
-                nsfw_labels.append("nsfw(R-18)")
-            elif score >= nsfw_threshold:
-                nsfw_labels.append("nsfw(R-15)")
-            else:
-                nsfw_labels.append("sfw")
+        return nsfw_labels, json.dumps(all_detections, indent=2)
 
-        return (json.dumps(all_detections, indent=2), json.dumps(nsfw_labels))
+    def _build_allowed_classes(
+        self,
+        detect_armpits: bool,
+        detect_female_breast: bool,
+        detect_male_breast: bool,
+        detect_female_genitalia: bool,
+        detect_male_genitalia: bool,
+        detect_belly: bool,
+        detect_buttocks: bool,
+        detect_anus: bool,
+        detect_feet: bool,
+    ) -> List[str]:
+        mapping = {
+            "ARMPITS_EXPOSED": detect_armpits,
+            "FEMALE_BREAST_EXPOSED": detect_female_breast,
+            "MALE_BREAST_EXPOSED": detect_male_breast,
+            "FEMALE_GENITALIA_EXPOSED": detect_female_genitalia,
+            "MALE_GENITALIA_EXPOSED": detect_male_genitalia,
+            "BELLY_EXPOSED": detect_belly,
+            "BUTTOCKS_EXPOSED": detect_buttocks,
+            "ANUS_EXPOSED": detect_anus,
+            "FEET_EXPOSED": detect_feet,
+        }
+        return [cls for cls, enabled in mapping.items() if enabled]
+
+    def _process_single_image(
+        self,
+        image: torch.Tensor,
+        allowed_classes: List[str],
+        threshold_detect: float,
+        threshold_nsfw: float,
+    ) -> Tuple[str, Dict]:
+        np_image = (image.cpu().numpy() * 255).astype(np.uint8)
+        detections = self.detector.detect(np_image)
+        filtered = [d for d in detections if d["score"] >= threshold_detect]
+        final_detections = [
+            {"class": d["class"], "score": round(d["score"], 2)}
+            for d in filtered
+            if d["class"] in allowed_classes
+        ]
+
+        input_tensor = self.transform(np_image).unsqueeze(0)
+        with torch.no_grad():
+            outputs = self.model(input_tensor)
+            probs = torch.nn.functional.softmax(outputs, dim=-1)
+            nsfw_score = probs.max().item()
+
+        if final_detections:
+            nsfw_label = "nsfw_r18"
+        elif nsfw_score >= threshold_nsfw:
+            nsfw_label = "nsfw_r15"
+        else:
+            nsfw_label = "sfw"
+
+        return nsfw_label, {
+            "detections": final_detections,
+            "nsfw_score": round(nsfw_score, 2),
+        }
