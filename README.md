@@ -23,7 +23,7 @@ Not supported.
 Clone the repository into your `custom_nodes` directory:
 
 ```bash
-git clone https://github.com/tighug/comfyui-eagle-feeder.git
+git clone https://github.com/tighug/comfyui-rating-checker.git
 ```
 
 ## Usage

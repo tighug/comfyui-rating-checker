@@ -23,7 +23,7 @@ ComfyUI の画像を NSFW (Not Safe For Work) 分類するためのカスタム�
 `custom_nodes`ディレクトリ内にクローンしてください。
 
 ```bash
-git clone　https://github.com/tighug/comfyui-eagle-feeder.git
+git clone　https://github.com/tighug/comfyui-rating-checker.git
 ```
 
 ## Usage
