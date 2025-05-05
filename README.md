@@ -1,22 +1,22 @@
 # ComfyUI Rating Checker
 
-[[日本語]](.//README_JP.md)
+[\[Japanese\]](./README.ja.md)
 
-A custom node for ComfyUI that classifies images into NSFW (Not Safe For Work) categories.
+This is a custom node for ComfyUI that classifies images as NSFW (Not Safe For Work).
 
-## Features
+## Feature
 
-This node is specifically designed to classify illustration-style images for NSFW content.
+This node is designed especially for classifying NSFW content in illustrated images.
 
-Existing similar nodes offer high accuracy for real human photographs but tend to overclassify anime-style illustrations as NSFW, even with minimal nudity. Moreover, fine-grained categorization (such as R15 / R18) has been challenging.
+While existing similar nodes perform well for real human photos, they tend to classify anime-style illustrations as NSFW even when there is minimal nudity. Additionally, distinguishing between R15 and R18 categories is often difficult.
 
-To address these issues, `Rating Checker (NudeNet)` combines an object detection model (NudeNet) with a scoring model (Marqo) to classify images into three labels: "SFW / NSFW (R15) / NSFW (R18)."
+To address these issues, `Rating Checker (NudeNet)` combines an object detection model (NudeNet) with an NSFW classification model to categorize images into three labels: `SFW`, `NSFW (R15)`, and `NSFW (R18)`.
 
 ## Installation
 
 ### ComfyUI Manager
 
-Not supported.
+Not supported yet.
 
 ### Manual
 
@@ -28,13 +28,14 @@ git clone https://github.com/tighug/comfyui-rating-checker.git
 
 ## Usage
 
-Three nodes are included for NSFW rating. Primarily, the NudeNet version is intended for use, but the other two nodes created during verification are also bundled.
+This package includes three nodes for NSFW rating. The primary node is the NudeNet version, but the others (created during evaluation) are also included.
 
 ### Rating Checker (NudeNet)
 
-Classifies images into the following three labels based on specific conditions:
+Classifies images into the following three labels based on these conditions:
 
-- `nsfw_r18`: Detects any of the following body parts:
+- `nsfw_r18`: At least one of the following body parts is detected with `detect_[body part] = True`:
+
   - armpits
   - female_breast
   - male_breast
@@ -44,42 +45,38 @@ Classifies images into the following three labels based on specific conditions:
   - buttocks
   - anus
   - feet
-- `nsfw_r15`: If not `nsfw_r18`, but `nsfw_score > threshold_nsfw`
-- `sfw`: If none of the above conditions are met
+
+- `nsfw_r15`: Not `nsfw_r18`, but `nsfw_score > threshold_nsfw`
+- `sfw`: Does not meet any of the above conditions
 
 ![NudeNet R15](./doc/images/nudenet.png)
-
-![NudeNet R18](./doc/images/nudenet_r18.png)
 
 Models used:
 
 - [notAI-tech/NudeNet](https://github.com/notAI-tech/NudeNet/tree/v3)
-- [Marqo/nsfw-image-detection-384](https://huggingface.co/Marqo/nsfw-image-detection-384)
+- [GantMan / nsfw_model](https://github.com/GantMan/nsfw_model)
 
 ### Rating Checker (GantMan)
 
 Classifies images into the following five labels:
 
 - `drawings`: Illustrations
-- `hentai`: Anime or manga
-- `neutral`: General images
-- `porn`: Realistic sexual images
-- `sexy`: Images with sexual undertones
+- `hentai`: Anime or manga-style content
+- `neutral`: General-purpose images
+- `porn`: Real-world explicit content
+- `sexy`: Images with a sexual vibe
 
 ![GantMan](./doc/images/gantman.png)
 
-**Note:**
-Anime-style illustrations are classified as either `drawings` or `hentai`, but often end up categorized as `hentai` even without swimsuits or lingerie.
-Thus, this model is not well-suited for illustration-specific classification, but it is effective for distinguishing between real photos and illustrations and for NSFW detection in real images.
+Useful for distinguishing between real images and illustrations and for general NSFW classification.
 
 Model used:
 
-- [GantMan/nsfw_model](https://github.com/GantMan/nsfw_model)
+- [GantMan / nsfw_model](https://github.com/GantMan/nsfw_model)
 
 ### Rating Checker (Marqo)
 
-Calculates an NSFW score for the image and outputs it as `scores`.
-It also performs binary classification (`sfw` / `nsfw`) based on the `threshold_nsfw` value and outputs it as `ratings`.
+Calculates an NSFW score from the image and outputs it as `scores`. It also performs binary classification (`sfw` / `nsfw`) using `threshold_nsfw`, and outputs the result as `ratings`.
 
 ![Marqo](./doc/images/marqo.png)
 

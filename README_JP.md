@@ -8,9 +8,9 @@ ComfyUI の画像を NSFW (Not Safe For Work) 分類するためのカスタム�
 
 特にイラスト系の画像の NSFW 判定を目的としたノードです。
 
-存在する類似ノードは実写の人物画像に対して高精度ですが、アニメ系イラストは肉体露出が少ない場合でも NSFW に分類されやすく、さらに小カテゴリの判別 (R15 / R18) も困難でした。
+存在する類似ノードは実写の人物画像に対して高精度ですが、アニメ系イラストは肉体露出が少ない場合でも NSFW に分類されやすく、さらに小カテゴリの判別 (R15 / R18) も困難です。
 
-上記の課題を解決するために、`Rating Checker（NudeNet）`は物体検出モデル(NudeNet) とスコア計算モデル(Marqo)を組み合わせ、「SFW / NSFW (R15) / NSFW (R18)」の 3 ラベルに分類します。
+上記の課題を解決するために、`Rating Checker（NudeNet）`は物体検出モデル(NudeNet) と NSFW 分類モデルを組み合わせ、「SFW / NSFW (R15) / NSFW (R18)」の 3 ラベルに分類します。
 
 ## Installation
 
@@ -49,12 +49,10 @@ NSFW レーティング用に 3 つのノードが含まれます。主には Nu
 
 ![NudeNet R15](./doc/images/nudenet.png)
 
-![NudeNet R18](./doc/images/nudenet_r18.png)
-
 使用モデル:
 
 - [notAI-tech/NudeNet](https://github.com/notAI-tech/NudeNet/tree/v3)
-- [Marqo/nsfw-image-detection-384](https://huggingface.co/Marqo/nsfw-image-detection-384)
+- [GantMan / nsfw_model](https://github.com/GantMan/nsfw_model)
 
 ### Rating Checker (GantMan)
 
@@ -68,7 +66,7 @@ NSFW レーティング用に 3 つのノードが含まれます。主には Nu
 
 ![GantMan](./doc/images/gantman.png)
 
-アニメイラストは`drawings`か`hentai`に分類されますが、水着や下着姿でなくても`hentai`に分類されることが多いため、イラスト特化の分類には向きません。実写とイラストの判別や、実写画像の NSFW 判定には有効です。
+実写とイラストの判別や、画像の NSFW 判定に有効です。
 
 使用モデル:
 
