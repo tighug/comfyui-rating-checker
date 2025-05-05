@@ -1,6 +1,6 @@
 # ComfyUI Rating Checker
 
-[\[Japanese\]](./README.ja.md)
+[[日本語]](./README_JP.md)
 
 This is a custom node for ComfyUI that classifies images as NSFW (Not Safe For Work).
 
