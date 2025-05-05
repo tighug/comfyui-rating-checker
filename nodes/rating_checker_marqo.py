@@ -1,8 +1,5 @@
-from typing import List, Tuple
-
 import timm
 import torch
-from PIL import Image
 
 from ..utils.image_utils import tensor_to_pil
 
@@ -21,12 +18,12 @@ class RatingCheckerMarqo:
         }
 
     RETURN_TYPES = (
-        "FLOAT",
         "STRING",
+        "FLOAT",
     )
     RETURN_NAMES = (
+        "labels",
         "scores",
-        "ratings",
     )
     FUNCTION = "classify"
     CATEGORY = "utils"
@@ -38,40 +35,27 @@ class RatingCheckerMarqo:
     def __init__(self):
         self.model = timm.create_model(
             "hf_hub:Marqo/nsfw-image-detection-384", pretrained=True
-        )
-        self.model.eval()
-        self.data_config = timm.data.resolve_model_data_config(self.model)
-        self.transform = timm.data.create_transform(
-            **self.data_config, is_training=False
-        )
-        self.class_names = self.model.pretrained_cfg["label_names"]
-        self.nsfw_index = self.class_names.index("NSFW")
+        ).eval()
+        data_config = timm.data.resolve_model_data_config(self.model)
+        self.transforms = timm.data.create_transform(**data_config, is_training=False)
 
     def classify(
         self, images: torch.Tensor, threshold_nsfw: float
-    ) -> Tuple[List[float], List[str]]:
+    ) -> tuple[list[str], list[float]]:
+        labels = []
         scores = []
-        ratings = []
 
-        for img_tensor in images:
-            score, rating = self._classify_single(img_tensor, threshold_nsfw)
-            scores.append(score)
-            ratings.append(rating)
+        images_pil = tensor_to_pil(images)
+        for image in images_pil:
+            with torch.no_grad():
+                image_transformed = self.transforms(image).unsqueeze(0)
+                output = self.model(image_transformed).softmax(dim=-1).cpu()
+                label_names = self.model.pretrained_cfg["label_names"]
+                index_nsfw = label_names.index("NSFW")
+                score_nsfw = round(output[0][index_nsfw].item(), 3)
+                label = "sfw" if score_nsfw < threshold_nsfw else "nsfw"
 
-        return scores, ratings
+            labels.append(label)
+            scores.append(score_nsfw)
 
-    def _classify_single(
-        self, img_tensor: torch.Tensor, threshold_nsfw: float
-    ) -> Tuple[float, str]:
-        img = tensor_to_pil(img_tensor)
-        nsfw_score = self._predict_nsfw_score(img)
-        rating = "general" if nsfw_score < threshold_nsfw else "nsfw"
-        return round(nsfw_score, 2), rating
-
-    def _predict_nsfw_score(self, img: Image.Image) -> float:
-        input_tensor = self.transform(img).unsqueeze(0)
-        with torch.no_grad():
-            output = self.model(input_tensor)
-            probabilities = torch.nn.functional.softmax(output[0], dim=0)
-        nsfw_score = probabilities[self.nsfw_index].item()
-        return nsfw_score
+        return (labels, scores)
