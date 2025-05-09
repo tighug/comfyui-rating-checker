@@ -16,7 +16,7 @@ ComfyUI の画像を NSFW (Not Safe For Work) 分類するためのカスタム�
 
 ### ComfyUI Manager
 
-未対応。
+`ComfyUI Rating Checker`で検索してください。
 
 ### Manual
 

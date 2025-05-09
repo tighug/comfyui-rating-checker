@@ -16,7 +16,7 @@ To address these issues, `Rating Checker (NudeNet)` combines an object detection
 
 ### ComfyUI Manager
 
-Not supported yet.
+Search for `ComfyUI Rating Checker`.
 
 ### Manual
 
