@@ -1,0 +1,15 @@
+[project]
+name = "rating-checker"
+description = "A custom node for ComfyUI that classifies images into NSFW (Not Safe For Work) categories."
+version = "1.0.0"
+license = {file = "LICENSE"}
+dependencies = ["loguru==0.7.3", "nudenet==3.4.2", "numpy==2.2.5", "onnxruntime==1.21.1", "onnxruntime_gpu==1.21.1", "Pillow==11.2.1", "Requests==2.32.3", "timm==1.0.15", "torch==2.6.0", "torchvision==0.21.0"]
+
+[project.urls]
+Repository = "https://github.com/tighug/comfyui-rating-checker"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "comfyui-rating-checker"
+Icon = ""
